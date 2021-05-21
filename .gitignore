@@ -1,0 +1,5 @@
+.vscode
+*.o
+*.swp
+.idea
+*.out

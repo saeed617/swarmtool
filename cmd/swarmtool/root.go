@@ -13,8 +13,9 @@ var (
 	config  *swarmtool.Config
 
 	rootCmd = &cobra.Command{
-		Use:   "swarmtool",
-		Short: "Utility for backup and restore of swarm cluster state",
+		Use:          "swarmtool",
+		Short:        "Utility for backup and restore of swarm cluster state",
+		SilenceUsage: true,
 	}
 )
 

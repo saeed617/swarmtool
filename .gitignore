@@ -3,4 +3,4 @@
 *.swp
 .idea
 *.out
-swarmtool
+/swarmtool

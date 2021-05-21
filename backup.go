@@ -1,4 +1,4 @@
-package main
+package swarmtool
 
 import (
 	"fmt"

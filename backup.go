@@ -12,18 +12,20 @@ import (
 
 type (
 	backup struct {
-		filePath  string
-		backupDir string
-		hot       bool
-		s3Client  S3Client
-		s3Bucket  string
+		backupOutputPath string
+		filename         string
+		backupDir        string
+		hot              bool
+		s3Client         S3Client
+		s3Bucket         string
 	}
 	BackupOpts struct {
-		FilePath  string
-		BackupDir string
-		Hot       bool
-		S3Client  S3Client
-		S3Bucket  string
+		BackupOutputPath string
+		Filename         string
+		BackupDir        string
+		Hot              bool
+		S3Client         S3Client
+		S3Bucket         string
 	}
 	S3Client interface {
 		Upload(ctx context.Context, bucketName, filePath string) error
@@ -47,18 +49,19 @@ func (c *MinIOClient) Upload(ctx context.Context, bucketName, filePath string) e
 
 func NewBackup(bo *BackupOpts) *backup {
 	return &backup{
-		filePath:  bo.FilePath,
-		backupDir: bo.BackupDir,
-		hot:       bo.Hot,
-		s3Client:  bo.S3Client,
-		s3Bucket:  bo.S3Bucket,
+		backupOutputPath: bo.BackupOutputPath,
+		filename:         bo.Filename,
+		backupDir:        bo.BackupDir,
+		hot:              bo.Hot,
+		s3Client:         bo.S3Client,
+		s3Bucket:         bo.S3Bucket,
 	}
 }
 
 func (b *backup) compress() (string, error) {
 	timeFormat := "2006-01-02T15:04:05"
 	now := time.Now().Format(timeFormat)
-	tmpFile := fmt.Sprintf("%s-%s.tar.gz", b.filePath, now)
+	tmpFile := fmt.Sprintf("%s/%s-%s.tar.gz", b.backupOutputPath, b.filename, now)
 	log.Printf("creating backup %s from %s ...", tmpFile, b.backupDir)
 	err := archiver.Archive([]string{b.backupDir}, tmpFile)
 	if err != nil {
@@ -69,7 +72,7 @@ func (b *backup) compress() (string, error) {
 	return tmpFile, nil
 }
 
-func (b *backup) Backup() error {
+func (b *backup) Run() error {
 	if b.hot {
 		return b.hotBackup()
 	}

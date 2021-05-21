@@ -1,6 +1,7 @@
 package main
 
 type Config struct {
-	BackupFilename string
+	BackupFilePath string
 	BackupDir      string
+	HotBackup      bool
 }

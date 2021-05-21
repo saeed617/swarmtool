@@ -11,15 +11,7 @@ import (
 )
 
 type (
-	backup struct {
-		backupOutputPath string
-		filename         string
-		backupDir        string
-		hot              bool
-		s3Client         S3Client
-		s3Bucket         string
-	}
-	BackupOpts struct {
+	Backup struct {
 		BackupOutputPath string
 		Filename         string
 		BackupDir        string
@@ -47,39 +39,28 @@ func (c *MinIOClient) Upload(ctx context.Context, bucketName, filePath string) e
 	return err
 }
 
-func NewBackup(bo *BackupOpts) *backup {
-	return &backup{
-		backupOutputPath: bo.BackupOutputPath,
-		filename:         bo.Filename,
-		backupDir:        bo.BackupDir,
-		hot:              bo.Hot,
-		s3Client:         bo.S3Client,
-		s3Bucket:         bo.S3Bucket,
-	}
-}
-
-func (b *backup) compress() (string, error) {
+func (b *Backup) compress() (string, error) {
 	timeFormat := "2006-01-02T15:04:05"
 	now := time.Now().Format(timeFormat)
-	tmpFile := fmt.Sprintf("%s/%s-%s.tar.gz", b.backupOutputPath, b.filename, now)
-	log.Printf("creating backup %s from %s ...", tmpFile, b.backupDir)
-	err := archiver.Archive([]string{b.backupDir}, tmpFile)
+	tmpFile := fmt.Sprintf("%s/%s-%s.tar.gz", b.BackupOutputPath, b.Filename, now)
+	log.Printf("creating backup %s from %s ...", tmpFile, b.BackupDir)
+	err := archiver.Archive([]string{b.BackupDir}, tmpFile)
 	if err != nil {
-		log.Printf("%s compression failed with error %s", b.backupDir, err)
+		log.Printf("%s compression failed with error %s", b.BackupDir, err)
 		return "", err
 	}
 	log.Print("backup created")
 	return tmpFile, nil
 }
 
-func (b *backup) Run() error {
-	if b.hot {
+func (b *Backup) Run() error {
+	if b.Hot {
 		return b.hotBackup()
 	}
 	return nil
 }
 
-func (b *backup) hotBackup() error {
+func (b *Backup) hotBackup() error {
 	filePath, err := b.compress()
 	if err != nil {
 		return err
@@ -87,9 +68,9 @@ func (b *backup) hotBackup() error {
 	return b.upload(filePath)
 }
 
-func (b *backup) upload(filePath string) error {
-	if b.s3Client != nil {
-		err := b.s3Client.Upload(context.Background(), b.s3Bucket, filePath)
+func (b *Backup) upload(filePath string) error {
+	if b.S3Client != nil {
+		err := b.S3Client.Upload(context.Background(), b.S3Bucket, filePath)
 		if err != nil {
 			return err
 		}

@@ -30,12 +30,12 @@ func backup() error {
 	}
 
 	b := &swarmtool.Backup{
-		BackupOutputPath: config.BackupOutputPath,
-		Filename:         config.Filename,
-		BackupDir:        config.BackupDir,
-		Hot:              config.HotBackup,
-		S3Client:         s3Client,
-		S3Bucket:         config.S3BucketName,
+		BackupOutputDir: config.BackupOutputDir,
+		Filename:        config.Filename,
+		BackupDir:       config.BackupDir,
+		Hot:             config.HotBackup,
+		S3Client:        s3Client,
+		S3Bucket:        config.S3BucketName,
 	}
 
 	err = b.Run()

@@ -12,12 +12,12 @@ import (
 
 type (
 	Backup struct {
-		BackupOutputPath string
-		Filename         string
-		BackupDir        string
-		Hot              bool
-		S3Client         S3Client
-		S3Bucket         string
+		BackupOutputDir string
+		Filename        string
+		BackupDir       string
+		Hot             bool
+		S3Client        S3Client
+		S3Bucket        string
 	}
 	S3Client interface {
 		Upload(ctx context.Context, bucketName, filePath string) error
@@ -42,7 +42,7 @@ func (c *MinIOClient) Upload(ctx context.Context, bucketName, filePath string) e
 func (b *Backup) compress() (string, error) {
 	timeFormat := "2006-01-02T15:04:05"
 	now := time.Now().Format(timeFormat)
-	tmpFile := fmt.Sprintf("%s/%s-%s.tar.gz", b.BackupOutputPath, b.Filename, now)
+	tmpFile := fmt.Sprintf("%s/%s-%s.tar.gz", b.BackupOutputDir, b.Filename, now)
 	log.Printf("creating backup %s from %s ...", tmpFile, b.BackupDir)
 	err := archiver.Archive([]string{b.BackupDir}, tmpFile)
 	if err != nil {

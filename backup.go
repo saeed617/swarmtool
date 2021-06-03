@@ -18,6 +18,8 @@ type (
 		Hot             bool
 		S3Client        S3Client
 		S3Bucket        string
+		Cluster         *Cluster
+		Dockerd         *Dockerd
 	}
 	S3Client interface {
 		Upload(ctx context.Context, bucketName, filePath string) error
@@ -57,6 +59,10 @@ func (b *Backup) Run() error {
 	if b.Hot {
 		return b.hotBackup()
 	}
+	if b.Cluster.IsSafeToShutdown() {
+		return b.coldBackup()
+	}
+
 	return nil
 }
 
@@ -66,6 +72,20 @@ func (b *Backup) hotBackup() error {
 		return err
 	}
 	return b.upload(filePath)
+}
+
+func (b *Backup) coldBackup() error {
+	err := b.Dockerd.Stop()
+	defer func() {
+		err := b.Dockerd.Start()
+		if err != nil {
+			log.Printf("starting docker failed with err %s", err)
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	return b.hotBackup()
 }
 
 func (b *Backup) upload(filePath string) error {

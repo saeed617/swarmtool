@@ -73,7 +73,7 @@ func createS3Client() (swarmtool.S3Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &swarmtool.MinIOClient{minioClient}, nil
+	return &swarmtool.MinIOClient{Client: minioClient}, nil
 }
 
 func createCluster() (*swarmtool.Cluster, error) {

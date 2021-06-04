@@ -25,7 +25,7 @@ type (
 	}
 	// ClusterClient implements DockerClient for cluster operations.
 	ClusterClient struct {
-		*client.Client
+		Client *client.Client
 	}
 )
 
@@ -35,7 +35,7 @@ func (c *ClusterClient) ManagerList(ctx context.Context) ([]*Node, error) {
 		Key:   "role",
 		Value: string(swarm.NodeRoleManager),
 	})
-	dockerNodes, err := c.NodeList(ctx, types.NodeListOptions{Filters: fs})
+	dockerNodes, err := c.Client.NodeList(ctx, types.NodeListOptions{Filters: fs})
 	if err != nil {
 		return nil, err
 	}

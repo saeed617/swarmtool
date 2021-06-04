@@ -4,39 +4,20 @@ import (
 	"context"
 	"fmt"
 	"github.com/mholt/archiver/v3"
-	"github.com/minio/minio-go/v7"
 	"log"
-	"strings"
 	"time"
 )
 
-type (
-	Backup struct {
-		BackupOutputDir string
-		Filename        string
-		BackupDir       string
-		Hot             bool
-		S3Client        S3Client
-		S3Bucket        string
-	}
-	S3Client interface {
-		Upload(ctx context.Context, bucketName, filePath string) error
-	}
-	MinIOClient struct {
-		*minio.Client
-	}
-)
-
-func (c *MinIOClient) Upload(ctx context.Context, bucketName, filePath string) error {
-	path := strings.Split(filePath, "/")
-	objName := path[len(path)-1]
-	contentType := "application/gzip"
-	log.Print("uploading backup to s3")
-	_, err := c.FPutObject(ctx, bucketName, objName, filePath, minio.PutObjectOptions{ContentType: contentType})
-	if err == nil {
-		log.Print("backup uploaded")
-	}
-	return err
+// Backup compresses and uploads a directory to s3 bucket.
+type Backup struct {
+	BackupOutputDir string
+	Filename        string
+	BackupDir       string
+	Hot             bool
+	S3Client        S3Client
+	S3Bucket        string
+	Cluster         *Cluster
+	Dockerd         *Dockerd
 }
 
 func (b *Backup) compress() (string, error) {
@@ -53,10 +34,17 @@ func (b *Backup) compress() (string, error) {
 	return tmpFile, nil
 }
 
+// Run starts hot/cold backup based on configuration and swarm cluster's state
 func (b *Backup) Run() error {
 	if b.Hot {
+		log.Print("hot backup ...")
 		return b.hotBackup()
 	}
+	if b.Cluster.IsSafeToShutdown() {
+		log.Print("cold backup ...")
+		return b.coldBackup()
+	}
+
 	return nil
 }
 
@@ -66,6 +54,20 @@ func (b *Backup) hotBackup() error {
 		return err
 	}
 	return b.upload(filePath)
+}
+
+func (b *Backup) coldBackup() error {
+	err := b.Dockerd.Stop()
+	defer func() {
+		err := b.Dockerd.Start()
+		if err != nil {
+			log.Printf("starting docker failed with err %s", err)
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	return b.hotBackup()
 }
 
 func (b *Backup) upload(filePath string) error {
